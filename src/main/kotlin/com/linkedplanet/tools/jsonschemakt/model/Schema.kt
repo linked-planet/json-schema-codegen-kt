@@ -7,5 +7,5 @@ data class Schema(
     val type: String,
     val properties: Map<String, Property>,
     val additionalProperties: Boolean,
-    val required: List<String>
+    val required: List<String>?
 )
