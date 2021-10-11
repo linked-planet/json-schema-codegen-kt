@@ -19,7 +19,9 @@ fun main(args: Array<String>) {
 fun File.process(targetPath: String?): Unit {
     val reader = inputStream().reader()
     val result = Gson().fromJson(reader, Schema::class.java)
-    val oFile = File("${targetPath ?: ""}${result.title}.kt").outputStream()
+    val dir = File("${targetPath ?: ""}/${result.id.toPackage().replace(".","/")}")
+    dir.mkdirs()
+    val oFile = File("${dir.path}/${result.title}.kt").outputStream()
     oFile.write(schemaTemplate(result).toByteArray())
 }
 
