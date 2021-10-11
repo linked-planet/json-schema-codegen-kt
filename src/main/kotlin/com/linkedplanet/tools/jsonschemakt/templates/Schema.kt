@@ -19,5 +19,7 @@ fun String.toPackage(): String =
         .replace(this) { ":_${it.groupValues[1]}" }
         .replace("-", "")
         .replace(".", "")
-        .replace(":", ".")
+        .split(":")
+        .dropLast(1)
+        .joinToString(".")
         .lowercase()
