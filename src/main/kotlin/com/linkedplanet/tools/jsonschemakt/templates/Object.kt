@@ -11,7 +11,7 @@ ${properties.map { (propName, prop) ->
 }.joinToString(",\n","","")}
 ${baseIndent})
 
-${baseIndent}${properties.generateChildTypes(baseIndent + indent(1)).joinToString("\n\n","","")}
+${baseIndent}${properties.generateChildTypes(baseIndent).joinToString("\n\n","","")}
 """.trimIndent()
 
 fun Property.propTypeToKotlinType(name: String): String =
