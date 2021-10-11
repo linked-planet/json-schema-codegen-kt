@@ -12,24 +12,28 @@ fun main(args: Array<String>) {
     } ?: arguments.sourceFolder?.let { folderName ->
         File(folderName).walk()
             .filter { it.isFile && it.name.endsWith(".json") }
-            .onEach { it.process(arguments.targetPath) }
+            .forEach { it.process(arguments.targetPath) }
     }
 }
 
 fun File.process(targetPath: String?): Unit {
     val reader = inputStream().reader()
     val result = Gson().fromJson(reader, Schema::class.java)
-    val dir = File("${targetPath ?: ""}/${result.id.toPackage().replace(".","/")}")
+    val dir = File("${targetPath ?: ""}/${result.id.toPackage().replace(".", "/")}")
     dir.mkdirs()
     val oFile = File("${dir.path}/${result.title}.kt").outputStream()
     oFile.write(schemaTemplate(result).toByteArray())
 }
 
 fun parseArgs(args: List<String>): AppArgs =
-    when (args[0]) {
-        "-t" -> AppArgs(args[1], null, null) + parseArgs(args.drop(2))
-        "-s" -> AppArgs(null, args[1], null) + parseArgs(args.drop(2))
-        else -> AppArgs(null, null, args)
+    if (args.isNotEmpty()) {
+        when (args[0]) {
+            "-t" -> AppArgs(args[1], null, null) + parseArgs(args.drop(2))
+            "-s" -> AppArgs(null, args[1], null) + parseArgs(args.drop(2))
+            else -> AppArgs(null, null, args)
+        }
+    } else {
+        AppArgs(null, null, null)
     }
 
 data class AppArgs(
@@ -37,7 +41,7 @@ data class AppArgs(
     val sourceFolder: String?,
     val sourceFiles: List<String>?
 ) {
-    operator fun plus(b: AppArgs):AppArgs =
+    operator fun plus(b: AppArgs): AppArgs =
         AppArgs(
             targetPath ?: b.targetPath,
             sourceFolder ?: b.sourceFolder,
