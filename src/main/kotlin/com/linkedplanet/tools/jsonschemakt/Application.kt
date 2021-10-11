@@ -3,91 +3,34 @@ package com.linkedplanet.tools.jsonschemakt
 import com.google.gson.Gson
 import com.linkedplanet.tools.jsonschemakt.model.Schema
 import com.linkedplanet.tools.jsonschemakt.templates.*
-import org.intellij.lang.annotations.Language
+import java.io.File
 
-
-
-
-val example: String = """
-{
-    "${"$"}schema": "http://json-schema.org/draft-04/schema#",
-    "id": "urn:OCPP:1.6:2019:12:BootNotificationRequest",
-    "title": "BootNotificationRequest",
-    "type": "object",
-    "properties": {
-        "chargePointVendor": {
-            "type": "string",
-            "maxLength": 20
-        },
-        "chargePointModel": {
-            "type": "string",
-            "maxLength": 20
-        },
-        "chargePointSerialNumber": {
-            "type": "string",
-            "maxLength": 25
-        },
-        "chargeBoxSerialNumber": {
-            "type": "string",
-            "format": "date-time"
-        },
-        "firmwareVersion": {
-            "type": "string",
-            "maxLength": 50
-        },
-        "iccid": {
-            "type": "string",
-            "maxLength": 20
-        },
-        "imsi": {
-            "type": "string",
-            "maxLength": 20
-        },
-        "meterType": {
-            "type": "string",
-            "enum": [
-                "Accepted",
-                "Blocked",
-                "Expired",
-                "Invalid",
-                "ConcurrentTx"
-            ]
-        },
-        "meterSerialNumber": {
-            "type": "string",
-            "maxLength": 25
-        },
-        "items": {
-            "type": "object",
-            "properties": {
-                "key": {
-                    "type": "string",
-                    "maxLength": 50
-                },
-                "readonly": {
-                    "type": "boolean"
-                },
-                "value": {
-                    "type": "string",
-                    "maxLength": 500
-                }
-            },
-            "additionalProperties": false,
-            "required": [
-                "key",
-                "readonly"
-            ]
-        }
-    },
-    "additionalProperties": false,
-    "required": [
-        "chargePointVendor",
-        "chargePointModel"
-    ]
+fun main(args: Array<String>) {
+    val arguments = parseArgs(args.toList())
+    arguments.sourceFiles?.onEach { fileName ->
+        val reader = File("${arguments.sourceFolder ?: ""}$fileName").inputStream().reader()
+        val result = Gson().fromJson(reader, Schema::class.java)
+        val oFile = File("${arguments.targetPath ?: ""}${result.title}.kt").outputStream()
+        oFile.write(schemaTemplate(result).toByteArray())
+    }
 }
-""".trimIndent()
 
-fun main() {
-    val result = Gson().fromJson(example, Schema::class.java)
-    println(schemaTemplate(result))
+fun parseArgs(args: List<String>): AppArgs =
+    when (args[0]) {
+        "-t" -> AppArgs(args[1], null, null) + parseArgs(args.drop(2))
+        "-s" -> AppArgs(null, args[1], null) + parseArgs(args.drop(2))
+        else -> AppArgs(null, null, args)
+    }
+
+data class AppArgs(
+    val targetPath: String?,
+    val sourceFolder: String?,
+    val sourceFiles: List<String>?
+) {
+    operator fun plus(b: AppArgs):AppArgs =
+        AppArgs(
+            targetPath ?: b.targetPath,
+            sourceFolder ?: b.sourceFolder,
+            sourceFiles ?: b.sourceFiles
+        )
 }
