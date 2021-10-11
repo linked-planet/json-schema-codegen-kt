@@ -8,11 +8,19 @@ import java.io.File
 fun main(args: Array<String>) {
     val arguments = parseArgs(args.toList())
     arguments.sourceFiles?.onEach { fileName ->
-        val reader = File("${arguments.sourceFolder ?: ""}$fileName").inputStream().reader()
-        val result = Gson().fromJson(reader, Schema::class.java)
-        val oFile = File("${arguments.targetPath ?: ""}${result.title}.kt").outputStream()
-        oFile.write(schemaTemplate(result).toByteArray())
+        File("${arguments.sourceFolder ?: ""}$fileName").process(arguments.targetPath)
+    } ?: arguments.sourceFolder?.let { folderName ->
+        File(folderName).walk()
+            .filter { it.isFile && it.name.endsWith(".json") }
+            .onEach { it.process(arguments.targetPath) }
     }
+}
+
+fun File.process(targetPath: String?): Unit {
+    val reader = inputStream().reader()
+    val result = Gson().fromJson(reader, Schema::class.java)
+    val oFile = File("${targetPath ?: ""}${result.title}.kt").outputStream()
+    oFile.write(schemaTemplate(result).toByteArray())
 }
 
 fun parseArgs(args: List<String>): AppArgs =
