@@ -10,7 +10,7 @@ package ${schema.id.toPackage()}
 import java.math.BigDecimal
 import org.joda.time.DateTime
 
-${objectTemplate("", schema.title, schema.properties, schema.required.orEmpty())}
+${objectTemplate(schema.title, schema.properties, schema.required.orEmpty())}
 """.trimIndent()
 
 

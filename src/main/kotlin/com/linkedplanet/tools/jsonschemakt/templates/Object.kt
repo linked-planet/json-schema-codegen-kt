@@ -4,22 +4,22 @@ import com.linkedplanet.tools.jsonschemakt.model.Property
 import org.intellij.lang.annotations.Language
 
 @Language("kotlin")
-fun objectTemplate(baseIndent: String, name: String, properties: Map<String, Property>, required: List<String>): String = """
-${baseIndent}data class ${name.capitalize()}(
+fun objectTemplate(name: String, properties: Map<String, Property>, required: List<String>): String = """
+data class ${name.capitalize()}(
 ${properties.map { (propName, prop) ->
-    "${baseIndent}${indent(1)}val $propName: ${prop.propTypeToKotlinType(propName)}${if(!required.contains(propName)) { "?" } else { "" } }"
-}.joinToString(",\n","","")}
-${baseIndent}) {
-${baseIndent}${indent(1)}companion object {
-${baseIndent}${indent(2)}const val sizeConstraints = mapOf(
-${properties.mapNotNull { (k, p) -> p.generateSizeConstraintEntry(baseIndent + indent(3), name, k) }.joinToString(",\n") }
-${baseIndent}${indent(2)})
-${baseIndent}${indent(1)}}
-${generateSizeConstraintFunction(baseIndent + indent(1), name)}
-${baseIndent}}
+    prop.generatePropLine(propName, required)
+}.joinToString(",\n") { indent(1) + it } }
+) {
+${generateSizeConstraintFunction(indent(1), name)}
+${generateSizeConstraintMap(name, properties)}
+}
 
-${baseIndent}${properties.generateChildTypes(baseIndent).joinToString("\n\n","","")}
+${properties.generateChildTypes().joinToString("\n\n","","")}
 """.trimIndent()
+
+@Language("kotlin")
+fun Property.generatePropLine(propName: String, required: List<String>): String =
+    "val $propName: ${propTypeToKotlinType(propName)}${if(!required.contains(propName)) { "?" } else { "" } }"
 
 @Language("kotlin")
 fun generateSizeConstraintFunction(indent: String, clsName: String): String =
@@ -31,8 +31,18 @@ ${indent + indent(1)}}
     """
 
 @Language("kotlin")
-fun Property.generateSizeConstraintEntry(indent: String, clsName: String, propName: String): String? =
-    maxLength?.let { "${indent}${clsName}::${propName} to $it" }
+fun generateSizeConstraintMap(clsName: String, properties: Map<String, Property>): String =
+    """
+    companion object {
+        const val sizeConstraints = mapOf(
+${properties.mapNotNull { (k, p) -> p.generateSizeConstraintEntry(clsName, k) }.joinToString(",\n") { indent(3) + it } }
+        )
+    }
+    """
+
+@Language("kotlin")
+fun Property.generateSizeConstraintEntry(clsName: String, propName: String): String? =
+    maxLength?.let { "${clsName}::${propName} to $it" }
 
 fun Property.propTypeToKotlinType(name: String): String =
     when(this.type) {
@@ -50,12 +60,12 @@ fun Property.propTypeToKotlinType(name: String): String =
         else -> "Any"
     }
 
-fun Map<String,Property>.generateChildTypes(baseIndent: String): List<String> =
+fun Map<String,Property>.generateChildTypes(): List<String> =
     mapNotNull { (name, prop) ->
         if(prop.type == "object")
-            objectTemplate(baseIndent,name, prop.properties!!, prop.required!!)
+            objectTemplate(name, prop.properties!!, prop.required!!)
         else if (prop.enum != null) {
-            enumTemplate(baseIndent, name, prop)
+            enumTemplate(name, prop)
         } else null
     }
 
